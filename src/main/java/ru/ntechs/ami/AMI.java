@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import ru.ntechs.ami.actions.Login;
@@ -21,6 +22,7 @@ import ru.ntechs.ami.events.PeerStatus;
 import ru.ntechs.ami.responses.Success;
 
 @Component
+@EnableConfigurationProperties(Config.class)
 public class AMI extends Thread {
 	private Config config;
 
@@ -103,8 +105,8 @@ public class AMI extends Thread {
 							message.engage(attr, value);
 					}
 					else {
-						if (message instanceof PlainMessage)
-							message.dump();
+//						if (message instanceof PlainMessage)
+//							message.dump();
 
 						if (message.getName().length() > 0) {
 							Vector<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());

@@ -67,4 +67,8 @@ public class Message {
 	public HashMap<String, String> getBody() {
 		return body;
 	}
+
+	public String getAttribute(String attrName) {
+		return body.get(attrName);
+	}
 }
