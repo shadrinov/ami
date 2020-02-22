@@ -3,16 +3,14 @@ package ru.ntechs.ami;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Message {
 	private AMI ami;
 
-	private final String type;
-	private final String name;
-
-	protected final Logger logger = LoggerFactory.getLogger(Message.class);
+	private String type;
+	private String name;
 
 	private ArrayList<String> keyOrder = new ArrayList<>();
 	private HashMap<String, String> body = new HashMap<>();
@@ -42,13 +40,13 @@ public class Message {
 	}
 
 	public void dump() {
-		logger.warn(String.format("%s: %s", getType(), getName()));
+		log.warn(String.format("%s: %s", getType(), getName()));
 
 		for (String attr : keyOrder) {
-			logger.warn(String.format("%s: %s", attr, body.get(attr)));
+			log.warn(String.format("%s: %s", attr, body.get(attr)));
 		}
 
-		logger.warn("");
+		log.warn("");
 	}
 
 	protected void engage(String attr, String value) {
@@ -57,7 +55,7 @@ public class Message {
 	}
 
 	protected void warnUnsupportedAttr(String attr, String value) {
-		logger.warn(String.format("Unsupported attribute \"%s\" for message of type \"%s: %s\". Value: \"%s\"", attr, getType(), getName(), value));
+		log.warn(String.format("Unsupported attribute \"%s\" for message of type \"%s: %s\". Value: \"%s\"", attr, getType(), getName(), value));
 	}
 
 	public ArrayList<String> getKeyOrder() {
