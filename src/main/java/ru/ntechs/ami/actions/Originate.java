@@ -29,7 +29,7 @@ public class Originate extends Action {
 	private String channelId;
 	private String otherChannelId;
 
-	public Originate(AMI ami, String name) {
+	public Originate(AMI ami) {
 		super(ami, "Originate");
 	}
 
