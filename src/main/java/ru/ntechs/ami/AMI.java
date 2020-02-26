@@ -105,7 +105,7 @@ public class AMI extends Thread {
 							message.engage(attr, value);
 					}
 					else {
-						if (message instanceof PlainMessage)
+						if ((message instanceof PlainMessage) && (message.getType().equals("Response")))
 							message.dump();
 
 						if (message.getName().length() > 0) {
