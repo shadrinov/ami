@@ -49,9 +49,11 @@ public class Message {
 		log.warn("");
 	}
 
-	protected void engage(String attr, String value) {
+	protected boolean engage(String attr, String value) {
 		keyOrder.add(attr);
 		body.put(attr, value);
+
+		return false;
 	}
 
 	protected void warnUnsupportedAttr(String attr, String value) {

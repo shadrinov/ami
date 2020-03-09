@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import ru.ntechs.ami.actions.Action;
 import ru.ntechs.ami.actions.Login;
 import ru.ntechs.ami.events.FullyBooted;
 import ru.ntechs.ami.events.PeerStatus;
@@ -159,7 +160,7 @@ public class AMI extends Thread {
 		queue.add(handler);
 	}
 
-	protected void submit(Action cmd) {
+	public void submit(Action cmd) {
 		for (String str : cmd.getMessageText()) {
 			logger.info(String.format("sending: %s", str));
 			out.println(str);

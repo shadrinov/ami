@@ -6,13 +6,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import ru.ntechs.ami.AMI;
-import ru.ntechs.ami.Action;
 
 @Getter
 @Setter
 @ToString
 public class Originate extends Action {
-	private String actionId;
 	private String channel;
 	private String exten;
 	private String context;
@@ -34,13 +32,8 @@ public class Originate extends Action {
 	}
 
 	@Override
-	public Iterable<String> getMessageText() {
-		ArrayList<String> request = new ArrayList<>();
-
-		request.add(String.format("Action: %s", getName()));
-
-		if (actionId != null)
-			request.add(String.format("ActionID: %s", actionId));
+	public ArrayList<String> getMessageText() {
+		ArrayList<String> request = super.getMessageText();
 
 		if (channel != null)
 			request.add(String.format("Channel: %s", channel));

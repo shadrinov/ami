@@ -3,7 +3,6 @@ package ru.ntechs.ami.actions;
 import java.util.ArrayList;
 
 import ru.ntechs.ami.AMI;
-import ru.ntechs.ami.Action;
 
 public class Login extends Action {
 	private String login;
@@ -17,10 +16,9 @@ public class Login extends Action {
 	}
 
 	@Override
-	public Iterable<String> getMessageText() {
-		ArrayList<String> request = new ArrayList<>();
+	public ArrayList<String> getMessageText() {
+		ArrayList<String> request = super.getMessageText();
 
-		request.add(String.format("Action: %s", getName()));
 		request.add(String.format("Username: %s", login));
 		request.add(String.format("Secret: %s", password));
 

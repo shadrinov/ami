@@ -1,7 +1,6 @@
 package ru.ntechs.ami.responses;
 
 import ru.ntechs.ami.AMI;
-import ru.ntechs.ami.Response;
 
 public class Success extends Response {
 	private String message;
@@ -11,13 +10,18 @@ public class Success extends Response {
 	}
 
 	@Override
-	protected void engage(String attr, String value) {
-		super.engage(attr, value);
+	protected boolean engage(String attr, String value) {
+		if (super.engage(attr, value))
+			return true;
 
 		if (attr.equalsIgnoreCase("Message"))
 			message = value;
-		else
+		else {
 			warnUnsupportedAttr(attr, value);
+			return false;
+		}
+
+		return true;
 	}
 
 	public String getMessage() {

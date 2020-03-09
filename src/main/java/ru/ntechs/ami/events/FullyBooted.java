@@ -1,7 +1,6 @@
 package ru.ntechs.ami.events;
 
 import ru.ntechs.ami.AMI;
-import ru.ntechs.ami.Event;
 
 public class FullyBooted extends Event {
 	private String privilege;
@@ -11,14 +10,19 @@ public class FullyBooted extends Event {
 	}
 
 	@Override
-	protected void engage(String attr, String value) {
-		super.engage(attr, value);
+	protected boolean engage(String attr, String value) {
+		if (super.engage(attr, value))
+			return true;
 
 		if (attr.equalsIgnoreCase("Privilege"))
 			privilege = value;
 		else if (attr.equalsIgnoreCase("Status")) {}
-		else
+		else {
 			warnUnsupportedAttr(attr, value);
+			return false;
+		}
+
+		return true;
 	}
 
 	public String getPrivilege() {
