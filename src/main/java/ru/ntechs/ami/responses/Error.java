@@ -4,10 +4,10 @@ import lombok.ToString;
 import ru.ntechs.ami.AMI;
 
 @ToString(callSuper = true)
-public class Success extends Response {
+public class Error extends Response {
 	private String message;
 
-	public Success(AMI ami, String name) {
+	public Error(AMI ami, String name) {
 		super(ami, name);
 	}
 
@@ -29,4 +29,5 @@ public class Success extends Response {
 	public String getMessage() {
 		return message;
 	}
+
 }

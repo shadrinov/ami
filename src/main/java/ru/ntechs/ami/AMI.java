@@ -20,25 +20,28 @@ import ru.ntechs.ami.actions.Action;
 import ru.ntechs.ami.actions.Login;
 import ru.ntechs.ami.events.FullyBooted;
 import ru.ntechs.ami.events.PeerStatus;
+import ru.ntechs.ami.responses.Error;
 import ru.ntechs.ami.responses.Success;
 
 @Component
 @EnableConfigurationProperties(Config.class)
 public class AMI extends Thread {
+	private final static String AMI_HEADER = "Asterisk Call Manager/";
+
 	private Config config;
 
 	private Integer verMajor;
 	private Integer verMinor;
+	private Integer verSuperminor;
 
 	private Socket socket;
 	private PrintWriter out;
 	private BufferedReader in;
 
-	private Message message;
 	private final Logger logger = LoggerFactory.getLogger(AMI.class);
 
 	private ConcurrentHashMap<String, Vector<EventHandler>> handlersMap = new ConcurrentHashMap<>();
-	private ExecutorService handlerThreadPool = Executors.newFixedThreadPool(1);
+	private ExecutorService handlerThreadPool = Executors.newFixedThreadPool(5);
 
 	public AMI(Config config) {
 		super();
@@ -55,32 +58,39 @@ public class AMI extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				String ln;
-
 				logger.info(String.format("connecting to ami://%s:%d...", config.getHostname(), config.getPort()));
-
 				connect(config.getHostname(), config.getPort());
 
 				submit(new Login(this, config.getUsername(), config.getPassword()));
-				ln = in.readLine();
 
-				final String amiName = "Asterisk Call Manager/";
 
-				if (ln.startsWith("Asterisk Call Manager/")) {
-					String version = ln.substring(amiName.length());
-					Integer pointPos = version.indexOf('.');
+				String ln = in.readLine();
+				if (ln.startsWith(AMI_HEADER)) {
+					String version = ln.substring(AMI_HEADER.length());
 
 					try {
-						verMajor = Integer.decode(version.substring(0, pointPos));
-						verMinor = Integer.decode(version.substring(pointPos + 1));
+						int pointPos, pointPos2;
 
-						logger.info(String.format("successfully connected to ami://%s:%d, protocol version: %d.%d", config.getHostname(), config.getPort(), verMajor, verMinor));
+						pointPos = version.indexOf('.');
+						verMajor = Integer.decode(version.substring(0, pointPos++));
+
+						if ((pointPos2 = version.indexOf('.', pointPos)) != -1) {
+							verMinor = Integer.decode(version.substring(pointPos, pointPos2++));
+							verSuperminor = Integer.decode(version.substring(pointPos2));
+						}
+						else {
+							verMinor = Integer.decode(version.substring(pointPos));
+							verSuperminor = 0;
+						}
+
+						logger.info(String.format("successfully connected to ami://%s:%d, protocol version: %d.%d.%d (%s)", config.getHostname(), config.getPort(), verMajor, verMinor, verSuperminor, version));
 					} catch (NumberFormatException e) {
 						logger.info(String.format("successfully connected to ami://%s:%d", config.getHostname(), config.getPort(), verMajor, verMinor));
 						logger.error(String.format("Failed to parse AMI version: %s", version));
 					}
 				}
 
+				Message message = null;
 				while ((ln = in.readLine()) != null) {
 					if (!ln.isEmpty()) {
 						Integer pos = ln.indexOf(':');
@@ -88,15 +98,17 @@ public class AMI extends Thread {
 						String value = ln.substring(pos + 1).trim();
 
 						if (message == null) {
-							if (attr.equalsIgnoreCase("Event")) {
-								if (value.equalsIgnoreCase("PeerStatus"))
-									message = new PeerStatus(this, value);
-								else if (value.equalsIgnoreCase("FullyBooted"))
-									message = new FullyBooted(this, value);
-							}
-							else if (attr.equalsIgnoreCase("Response")) {
-								if (value.equalsIgnoreCase("Success"))
-									message = new Success(this, value);
+							switch (attr.toLowerCase()) {
+							case ("event"):
+								switch (value.toLowerCase()) {
+									case ("peerstatus"): message = new PeerStatus(this, value); break;
+									case ("fullybooted"): message = new FullyBooted(this, value); break;
+								}
+							case ("response"):
+								switch (value.toLowerCase()) {
+									case ("success"): message = new Success(this, value); break;
+									case ("error"): message = new Error(this, value); break;
+								}
 							}
 
 							if (message == null)
@@ -114,9 +126,8 @@ public class AMI extends Thread {
 
 							if (queue != null) {
 								for (EventHandler handler : queue) {
+									final Message messageLocal = message;
 									handlerThreadPool.execute(new Runnable() {
-										private Message messageLocal = message;
-
 										@Override
 										public void run() {
 											try {
@@ -148,8 +159,9 @@ public class AMI extends Thread {
 		}
 	}
 
-	public void addHandler(String eventName, EventHandler handler) {
+	public EventHandlerDescriptor addHandler(String eventName, EventHandler handler) {
 		eventName = eventName.toLowerCase();
+
 		Vector<EventHandler> queue = handlersMap.get(eventName);
 
 		if (queue == null) {
@@ -158,9 +170,10 @@ public class AMI extends Thread {
 		}
 
 		queue.add(handler);
+		return new EventHandlerDescriptor(queue, handler);
 	}
 
-	public void submit(Action cmd) {
+	public synchronized void submit(Action cmd) {
 		for (String str : cmd.getMessageText()) {
 			logger.info(String.format("sending: %s", str));
 			out.println(str);
@@ -201,6 +214,5 @@ public class AMI extends Thread {
 		this.socket = null;
 		this.in = null;
 		this.out = null;
-		this.message = null;
 	}
 }

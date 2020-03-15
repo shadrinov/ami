@@ -57,7 +57,7 @@ public class Message {
 	}
 
 	protected void warnUnsupportedAttr(String attr, String value) {
-		log.warn(String.format("Unsupported attribute \"%s\" for message of type \"%s: %s\". Value: \"%s\"", attr, getType(), getName(), value));
+		log.warn(String.format("Unsupported attribute \"%s\" in message of type \"%s: %s\". Value: \"%s\"", attr, getType(), getName(), value));
 	}
 
 	public ArrayList<String> getKeyOrder() {
