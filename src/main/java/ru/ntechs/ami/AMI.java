@@ -11,24 +11,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.stereotype.Component;
-
+import lombok.extern.slf4j.Slf4j;
 import ru.ntechs.ami.actions.Action;
 import ru.ntechs.ami.actions.Login;
 import ru.ntechs.ami.events.FullyBooted;
 import ru.ntechs.ami.events.PeerStatus;
 import ru.ntechs.ami.responses.Error;
+import ru.ntechs.ami.responses.Response;
 import ru.ntechs.ami.responses.Success;
 
-@Component
-@EnableConfigurationProperties(Config.class)
+@Slf4j
 public class AMI extends Thread {
 	private final static String AMI_HEADER = "Asterisk Call Manager/";
 
-	private Config config;
+	private String hostname;
+	private int port;
+	private String username;
+	private String password;
 
 	private Integer verMajor;
 	private Integer verMinor;
@@ -38,31 +37,40 @@ public class AMI extends Thread {
 	private PrintWriter out;
 	private BufferedReader in;
 
-	private final Logger logger = LoggerFactory.getLogger(AMI.class);
-
 	private ConcurrentHashMap<String, Vector<EventHandler>> handlersMap = new ConcurrentHashMap<>();
 	private ExecutorService handlerThreadPool = Executors.newFixedThreadPool(5);
 
-	public AMI(Config config) {
+	public AMI() {
 		super();
-
-		this.config = config;
 
 		setDaemon(true);
 		setName("ami");
 		reset();
-		start();
 	}
 
 	@Override
 	public void run() {
 		while (true) {
 			try {
-				logger.info(String.format("connecting to ami://%s:%d...", config.getHostname(), config.getPort()));
-				connect(config.getHostname(), config.getPort());
+				log.info(String.format("connecting to ami://%s:%d...", hostname, port));
+				connect(hostname, port);
 
-				submit(new Login(this, config.getUsername(), config.getPassword()));
+				final Login login = new Login(this, username, password);
 
+				handlerThreadPool.execute(new Runnable() {
+					@Override
+					public void run() {
+						login.submit();
+						Response resp = login.waitForResponse(30000);
+
+						if (!resp.isSuccess()) {
+							log.info("login failed: {}", resp.getMessage());
+						}
+						else {
+							log.info("login successful: {}", resp.getMessage());
+						}
+					}
+				});
 
 				String ln = in.readLine();
 				if (ln.startsWith(AMI_HEADER)) {
@@ -83,10 +91,10 @@ public class AMI extends Thread {
 							verSuperminor = 0;
 						}
 
-						logger.info(String.format("successfully connected to ami://%s:%d, protocol version: %d.%d.%d (%s)", config.getHostname(), config.getPort(), verMajor, verMinor, verSuperminor, version));
+						log.info(String.format("connected to ami://%s:%d, protocol version: %d.%d.%d (%s)", hostname, port, verMajor, verMinor, verSuperminor, version));
 					} catch (NumberFormatException e) {
-						logger.info(String.format("successfully connected to ami://%s:%d", config.getHostname(), config.getPort(), verMajor, verMinor));
-						logger.error(String.format("Failed to parse AMI version: %s", version));
+						log.info(String.format("connected to ami://%s:%d", hostname, port));
+						log.error(String.format("Failed to parse AMI version: %s", version));
 					}
 				}
 
@@ -146,9 +154,9 @@ public class AMI extends Thread {
 					}
 				}
 			} catch (UnknownHostException e) {
-				logger.error(String.format("Unable to connect to Asterisk Manager Interface (AMI): %s", e.getLocalizedMessage()));
+				log.error(String.format("Unable to connect to Asterisk Manager Interface (AMI): %s", e.getLocalizedMessage()));
 			} catch (IOException e) {
-				logger.error(String.format("I/O with Asterisk Manager Interface (AMI) failed: %s", e.getLocalizedMessage()));
+				log.error(String.format("I/O with Asterisk Manager Interface (AMI) failed: %s", e.getLocalizedMessage()));
 			} finally {
 				reset();
 
@@ -175,35 +183,15 @@ public class AMI extends Thread {
 
 	public synchronized void submit(Action cmd) {
 		for (String str : cmd.getMessageText()) {
-			logger.info(String.format("sending: %s", str));
+			log.info(String.format("sending: %s", str));
 			out.println(str);
 		}
 
-		logger.info("sending: <LF>");
+		log.info("sending: <LF>");
 		out.println();
 	}
 
 	private void connect(String hostname, Integer port) throws UnknownHostException, IOException {
-		if (config.getHostname() == null) {
-			logger.error("ami.hostname not defined in application.properties");
-			return;
-		}
-
-		if (config.getPort() == null) {
-			logger.error("ami.port not defined in application.properties");
-			return;
-		}
-
-		if (config.getUsername() == null) {
-			logger.error("ami.username not defined in application.properties");
-			return;
-		}
-
-		if (config.getPassword() == null) {
-			logger.error("ami.password not defined in application.properties");
-			return;
-		}
-
 		socket = new Socket(hostname, port);
 
 		out = new PrintWriter(socket.getOutputStream(), true);
@@ -214,5 +202,21 @@ public class AMI extends Thread {
 		this.socket = null;
 		this.in = null;
 		this.out = null;
+	}
+
+	public void setHostname(String hostname) {
+		this.hostname = hostname;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 }

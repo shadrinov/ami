@@ -26,6 +26,12 @@ public class Success extends Response {
 		return true;
 	}
 
+	@Override
+	public boolean isSuccess() {
+		return true;
+	}
+
+	@Override
 	public String getMessage() {
 		return message;
 	}

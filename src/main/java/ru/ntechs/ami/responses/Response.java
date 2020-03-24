@@ -16,6 +16,14 @@ public abstract class Response extends Message {
 		super(ami, "Response", name);
 	}
 
+	public boolean isSuccess() {
+		return false;
+	}
+
+	public String getMessage() {
+		return null;
+	}
+
 	@Override
 	protected boolean engage(String attr, String value) {
 		if (super.engage(attr, value))
