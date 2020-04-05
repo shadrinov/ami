@@ -37,6 +37,9 @@ public class AMI extends Thread {
 	private PrintWriter out;
 	private BufferedReader in;
 
+	private boolean debug = false;
+
+	private Vector<EventHandler> universalHandlers = new Vector<>();
 	private ConcurrentHashMap<String, Vector<EventHandler>> handlersMap = new ConcurrentHashMap<>();
 	private ExecutorService handlerThreadPool = Executors.newFixedThreadPool(5);
 
@@ -52,7 +55,7 @@ public class AMI extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				log.info(String.format("connecting to ami://%s:%d...", hostname, port));
+				log.info("connecting to ami://{}:{}...", hostname, port);
 				connect(hostname, port);
 
 				final Login login = new Login(this, username, password);
@@ -126,10 +129,25 @@ public class AMI extends Thread {
 							message.engage(attr, value);
 					}
 					else {
-						if ((message instanceof PlainMessage) && (message.getType().equals("Response")))
-							message.dump();
+						if (debug)
+							message.dump("received: ");
 
 						if (message.getName().length() > 0) {
+							for (EventHandler handler : universalHandlers) {
+								final Message messageLocal = message;
+								handlerThreadPool.execute(new Runnable() {
+									@Override
+									public void run() {
+										try {
+											handler.run(messageLocal);
+										}
+										catch (Exception e) {
+											e.printStackTrace();
+										}
+									}
+								});
+							}
+
 							Vector<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());
 
 							if (queue != null) {
@@ -181,13 +199,18 @@ public class AMI extends Thread {
 		return new EventHandlerDescriptor(queue, handler);
 	}
 
-	public synchronized void submit(Action cmd) {
-		for (String str : cmd.getMessageText()) {
-			log.info(String.format("sending: %s", str));
-			out.println(str);
-		}
+	public EventHandlerDescriptor addHandler(EventHandler handler) {
+		universalHandlers.add(handler);
+		return new EventHandlerDescriptor(universalHandlers, handler);
+	}
 
-		log.info("sending: <LF>");
+	public synchronized void submit(Action cmd) {
+		if (debug)
+			cmd.dump("sending: ");
+
+		for (String str : cmd.getMessageText())
+			out.println(str);
+
 		out.println();
 	}
 
@@ -218,5 +241,13 @@ public class AMI extends Thread {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public void enableDebug() {
+		debug = true;
+	}
+
+	public void disableDebug() {
+		debug = false;
 	}
 }

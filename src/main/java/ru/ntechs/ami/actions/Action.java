@@ -50,6 +50,14 @@ public abstract class Action extends Message {
 		dscError = getAMI().addHandler("Error", eventHandler);
 	}
 
+	@Override
+	public void dump(String prefix) {
+		for (String str : getMessageText())
+			log.info("{}{}", prefix, str);
+
+		log.info("{}--- End Of Message ---", prefix);
+	}
+
 	public ArrayList<String> getMessageText() {
 		ArrayList<String> request = new ArrayList<>();
 

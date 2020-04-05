@@ -39,14 +39,13 @@ public class Message {
 		return type;
 	}
 
-	public void dump() {
-		log.warn(String.format("%s: %s", getType(), getName()));
+	public void dump(String prefix) {
+		log.info("{}{}: {}", prefix, getType(), getName());
 
-		for (String attr : keyOrder) {
-			log.warn(String.format("%s: %s", attr, body.get(attr)));
-		}
+		for (String attr : keyOrder)
+			log.info("{}{}: {}", prefix, attr, body.get(attr));
 
-		log.warn("");
+		log.info("{}--- End Of Message ---", prefix);
 	}
 
 	protected boolean engage(String attr, String value) {
