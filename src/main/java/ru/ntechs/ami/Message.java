@@ -43,14 +43,14 @@ public class Message {
 		log.info("{}{}: {}", prefix, getType(), getName());
 
 		for (String attr : keyOrder)
-			log.info("{}{}: {}", prefix, attr, body.get(attr));
+			log.info("{}{}: {}", prefix, attr, body.get(attr.toLowerCase()));
 
 		log.info("{}--- End Of Message ---", prefix);
 	}
 
 	protected boolean engage(String attr, String value) {
 		keyOrder.add(attr);
-		body.put(attr, value);
+		body.put(attr.toLowerCase(), value);
 
 		return false;
 	}
@@ -68,6 +68,6 @@ public class Message {
 	}
 
 	public String getAttribute(String attrName) {
-		return body.get(attrName);
+		return body.get(attrName.toLowerCase());
 	}
 }
