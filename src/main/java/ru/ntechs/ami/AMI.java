@@ -41,7 +41,7 @@ public class AMI extends Thread {
 
 	private Vector<EventHandler> universalHandlers = new Vector<>();
 	private ConcurrentHashMap<String, Vector<EventHandler>> handlersMap = new ConcurrentHashMap<>();
-	private ExecutorService handlerThreadPool = Executors.newFixedThreadPool(5);
+	private ExecutorService handlerThreadPool = Executors.newCachedThreadPool();
 
 	public AMI() {
 		super();
