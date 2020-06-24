@@ -1,12 +1,12 @@
 package ru.ntechs.ami;
 
-import java.util.Vector;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class EventHandlerDescriptor {
-	private Vector<EventHandler> queue;
+	private ConcurrentLinkedDeque<EventHandler> queue;
 	private EventHandler obj;
 
-	public EventHandlerDescriptor(Vector<EventHandler> queue, EventHandler obj) {
+	public EventHandlerDescriptor(ConcurrentLinkedDeque<EventHandler> queue, EventHandler obj) {
 		super();
 
 		this.queue = queue;
@@ -14,9 +14,11 @@ public class EventHandlerDescriptor {
 	}
 
 	public synchronized void cancel() {
-		queue.remove(obj);
+		if ((queue != null) && (obj != null)) {
+			queue.remove(obj);
 
-		queue = null;
-		obj = null;
+			queue = null;
+			obj = null;
+		}
 	}
 }

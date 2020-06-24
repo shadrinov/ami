@@ -50,6 +50,11 @@ public abstract class Action extends Message {
 		dscError = getAMI().addHandler("Error", eventHandler);
 	}
 
+	public void disableResponseHandlers() {
+		dscSuccess.cancel();
+		dscError.cancel();
+	}
+
 	@Override
 	public void dump(String prefix) {
 		for (String str : getMessageText())

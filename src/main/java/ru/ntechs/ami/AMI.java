@@ -6,10 +6,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 import lombok.extern.slf4j.Slf4j;
 import ru.ntechs.ami.actions.Action;
@@ -39,8 +40,8 @@ public class AMI extends Thread {
 
 	private boolean debug = false;
 
-	private Vector<EventHandler> universalHandlers = new Vector<>();
-	private ConcurrentHashMap<String, Vector<EventHandler>> handlersMap = new ConcurrentHashMap<>();
+	private ConcurrentLinkedDeque<EventHandler> universalHandlers = new ConcurrentLinkedDeque<>();
+	private ConcurrentHashMap<String, ConcurrentLinkedDeque<EventHandler>> handlersMap = new ConcurrentHashMap<>();
 	private ExecutorService handlerThreadPool = Executors.newCachedThreadPool();
 
 	public AMI() {
@@ -132,39 +133,40 @@ public class AMI extends Thread {
 						if (debug)
 							message.dump("received: ");
 
-						if (message.getName().length() > 0) {
-							for (EventHandler handler : universalHandlers) {
-								final Message messageLocal = message;
-								handlerThreadPool.execute(new Runnable() {
-									@Override
-									public void run() {
-										try {
-											handler.run(messageLocal);
-										}
-										catch (Exception e) {
-											e.printStackTrace();
-										}
-									}
-								});
-							}
+						if (!message.getName().isEmpty()) {
+							final Message messageLocal = message;
 
-							Vector<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());
+							universalHandlers.forEach(new Consumer<EventHandler>() {
+								@Override
+								public void accept(EventHandler handler) {
+									try {
+										handler.run(messageLocal);
+									}
+									catch (Exception e) {
+										e.printStackTrace();
+									}
+								}
+							});
+
+							ConcurrentLinkedDeque<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());
 
 							if (queue != null) {
-								for (EventHandler handler : queue) {
-									final Message messageLocal = message;
-									handlerThreadPool.execute(new Runnable() {
-										@Override
-										public void run() {
-											try {
-												handler.run(messageLocal);
+								queue.forEach(new Consumer<EventHandler>() {
+									@Override
+									public void accept(EventHandler handler) {
+										handlerThreadPool.execute(new Runnable() {
+											@Override
+											public void run() {
+												try {
+													handler.run(messageLocal);
+												}
+												catch (Exception e) {
+													e.printStackTrace();
+												}
 											}
-											catch (Exception e) {
-												e.printStackTrace();
-											}
-										}
-									});
-								}
+										});
+									}
+								});
 							}
 						}
 
@@ -188,10 +190,10 @@ public class AMI extends Thread {
 	public EventHandlerDescriptor addHandler(String eventName, EventHandler handler) {
 		eventName = eventName.toLowerCase();
 
-		Vector<EventHandler> queue = handlersMap.get(eventName);
+		ConcurrentLinkedDeque<EventHandler> queue = handlersMap.get(eventName);
 
 		if (queue == null) {
-			queue = new Vector<>();
+			queue = new ConcurrentLinkedDeque<>();
 			handlersMap.put(eventName, queue);
 		}
 
