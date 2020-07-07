@@ -1,6 +1,8 @@
 package ru.ntechs.ami.actions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map.Entry;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -19,7 +21,7 @@ public class Originate extends Action {
 	private String data;
 	private String timeout;
 	private String callerId;
-	private String variable;
+	private HashMap<String, String> variable;
 	private String account;
 	private String earlyMedia;
 	private String async;
@@ -60,7 +62,8 @@ public class Originate extends Action {
 			request.add(String.format("CallerID: %s", callerId));
 
 		if (variable != null)
-			request.add(String.format("Variable: %s", variable));
+			for (Entry<String, String> entry : variable.entrySet())
+				request.add(String.format("Variable: %s=%s", entry.getKey(), entry.getValue()));
 
 		if (account != null)
 			request.add(String.format("Account: %s", account));
