@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 import lombok.extern.slf4j.Slf4j;
 import ru.ntechs.ami.actions.Action;
@@ -134,38 +133,32 @@ public class AMI extends Thread {
 							message.dump("received: ");
 
 						if (!message.getName().isEmpty()) {
-							final Message messageLocal = message;
+							Message messageLocal = message;
 
-							universalHandlers.forEach(new Consumer<EventHandler>() {
-								@Override
-								public void accept(EventHandler handler) {
-									try {
-										handler.run(messageLocal);
-									}
-									catch (Exception e) {
-										e.printStackTrace();
-									}
+							universalHandlers.forEach(handler -> {
+								try {
+									handler.run(messageLocal);
+								}
+								catch (Exception e) {
+									e.printStackTrace();
 								}
 							});
 
 							ConcurrentLinkedDeque<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());
 
 							if (queue != null) {
-								queue.forEach(new Consumer<EventHandler>() {
-									@Override
-									public void accept(EventHandler handler) {
-										handlerThreadPool.execute(new Runnable() {
-											@Override
-											public void run() {
-												try {
-													handler.run(messageLocal);
-												}
-												catch (Exception e) {
-													e.printStackTrace();
-												}
+								queue.forEach(handler -> {
+									handlerThreadPool.execute(new Runnable() {
+										@Override
+										public void run() {
+											try {
+												handler.run(messageLocal);
 											}
-										});
-									}
+											catch (Exception e) {
+												e.printStackTrace();
+											}
+										}
+									});
 								});
 							}
 						}
