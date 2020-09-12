@@ -136,12 +136,17 @@ public class AMI extends Thread {
 							Message messageLocal = message;
 
 							universalHandlers.forEach(handler -> {
-								try {
-									handler.run(messageLocal);
-								}
-								catch (Exception e) {
-									e.printStackTrace();
-								}
+								handlerThreadPool.execute(new Runnable() {
+									@Override
+									public void run() {
+										try {
+											handler.run(messageLocal);
+										}
+										catch (Exception e) {
+											e.printStackTrace();
+										}
+									}
+								});
 							});
 
 							ConcurrentLinkedDeque<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());
