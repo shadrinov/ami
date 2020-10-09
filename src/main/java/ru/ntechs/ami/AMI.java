@@ -66,12 +66,10 @@ public class AMI extends Thread {
 						login.submit();
 						Response resp = login.waitForResponse(30000);
 
-						if (!resp.isSuccess()) {
-							log.info("login failed: {}", resp.getMessage());
-						}
-						else {
+						if (resp.isSuccess())
 							log.info("login successful: {}", resp.getMessage());
-						}
+						else
+							log.info("login failed: {}", resp.getMessage());
 					}
 				});
 
@@ -249,5 +247,34 @@ public class AMI extends Thread {
 
 	public void disableDebug() {
 		debug = false;
+	}
+
+	public int compareVersion(int verMajor, int verMinor, int verSuperminor) {
+		if (this.verMajor != null) {
+			if (this.verMajor == verMajor) {
+				if (this.verMinor != null) {
+					if (this.verMinor == verMinor) {
+						if (this.verSuperminor != null) {
+							if (this.verSuperminor == verSuperminor)
+								return 0;
+							else
+								return (this.verSuperminor > verSuperminor) ? 1 : -1;
+						}
+						else
+							log.info("unable to check AMI version, verSuperminor not defined");
+					}
+					else
+						return (this.verMinor > verMinor) ? 1 : -1;
+				}
+				else
+					log.info("unable to check AMI version, verMinor not defined");
+			}
+			else
+				return (this.verMajor > verMajor) ? 1 : -1;
+		}
+		else
+			log.info("unable to check AMI version, verMajor not defined");
+
+		return -1;
 	}
 }

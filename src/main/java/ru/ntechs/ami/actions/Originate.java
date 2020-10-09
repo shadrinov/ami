@@ -7,8 +7,10 @@ import java.util.Map.Entry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import ru.ntechs.ami.AMI;
 
+@Slf4j
 @Getter
 @Setter
 @ToString
@@ -80,8 +82,10 @@ public class Originate extends Action {
 		if (channelId != null)
 			request.add(String.format("ChannelId: %s", channelId));
 
-		if (otherChannelId != null)
+		if ((otherChannelId != null) && (getAMI().compareVersion(2, 2, 0) >= 0))
 			request.add(String.format("OtherChannelId: %s", otherChannelId));
+		else
+			log.info("ignoring attribute 'otherChannelId' due to incompatible AMI version");
 
 		return request;
 	}
