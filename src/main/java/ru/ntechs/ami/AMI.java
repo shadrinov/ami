@@ -8,8 +8,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import lombok.extern.slf4j.Slf4j;
 import ru.ntechs.ami.actions.Action;
@@ -41,7 +39,6 @@ public class AMI extends Thread {
 
 	private ConcurrentLinkedDeque<EventHandler> universalHandlers = new ConcurrentLinkedDeque<>();
 	private ConcurrentHashMap<String, ConcurrentLinkedDeque<EventHandler>> handlersMap = new ConcurrentHashMap<>();
-	private ExecutorService handlerThreadPool = Executors.newCachedThreadPool();
 
 	public AMI() {
 		super();
@@ -60,7 +57,7 @@ public class AMI extends Thread {
 
 				final Login login = new Login(this, username, password);
 
-				handlerThreadPool.execute(new Runnable() {
+				new Thread(new Runnable() {
 					@Override
 					public void run() {
 						login.submit();
@@ -71,7 +68,7 @@ public class AMI extends Thread {
 						else
 							log.info("login failed: {}", resp.getMessage());
 					}
-				});
+				}).start();
 
 				String ln = in.readLine();
 				if (ln.startsWith(AMI_HEADER)) {
@@ -132,38 +129,12 @@ public class AMI extends Thread {
 
 						if (!message.getName().isEmpty()) {
 							Message messageLocal = message;
-
-							universalHandlers.forEach(handler -> {
-								handlerThreadPool.execute(new Runnable() {
-									@Override
-									public void run() {
-										try {
-											handler.run(messageLocal);
-										}
-										catch (Exception e) {
-											e.printStackTrace();
-										}
-									}
-								});
-							});
+							universalHandlers.forEach(handler -> { handler.run(messageLocal); });
 
 							ConcurrentLinkedDeque<EventHandler> queue = handlersMap.get(message.getName().toLowerCase());
 
-							if (queue != null) {
-								queue.forEach(handler -> {
-									handlerThreadPool.execute(new Runnable() {
-										@Override
-										public void run() {
-											try {
-												handler.run(messageLocal);
-											}
-											catch (Exception e) {
-												e.printStackTrace();
-											}
-										}
-									});
-								});
-							}
+							if (queue != null)
+								queue.forEach(handler -> { handler.run(messageLocal); });
 						}
 
 						message = null;
