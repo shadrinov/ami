@@ -82,10 +82,12 @@ public class Originate extends Action {
 		if (channelId != null)
 			request.add(String.format("ChannelId: %s", channelId));
 
-		if ((otherChannelId != null) && (getAMI().compareVersion(2, 2, 0) >= 0))
-			request.add(String.format("OtherChannelId: %s", otherChannelId));
-		else
-			log.info("ignoring attribute 'otherChannelId' due to incompatible AMI version");
+		if (otherChannelId != null) {
+			if (getAMI().compareVersion(2, 2, 0) >= 0)
+				request.add(String.format("OtherChannelId: %s", otherChannelId));
+			else
+				log.info("ignoring attribute 'otherChannelId' due to incompatible AMI version");
+		}
 
 		return request;
 	}
